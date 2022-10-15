@@ -1,39 +1,12 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 
-public class CircleMaskControl : MonoBehaviour, ICanvasRaycastFilter
+public class CircleMaskControl : MaskControl
 {
-    //获取画布
-    public Canvas Canvas;
-    /// <summary>
-    /// 所有目标
-    /// </summary>
-    public RectTransform[] targets;
-
-    /// <summary>
-    /// 
-    /// </summary>
-    private int curIdx;
-
-    /// <summary>
-    /// 要高亮显示的目标
-    /// </summary>
-    public RectTransform Target { get; private set; }
-
-    /// <summary>
-    /// 区域范围缓存
-    /// </summary>
-    private Vector3[] _corners = new Vector3[4];
-
     /// <summary>
     /// 镂空区域半径
     /// </summary>
     private float _radius;
-
-    /// <summary>
-    /// 遮罩材质
-    /// </summary>
-    private Material _material;
 
     /// <summary>
     /// 当前高亮区域的半径
@@ -41,36 +14,9 @@ public class CircleMaskControl : MonoBehaviour, ICanvasRaycastFilter
     private float _currentRadius;
 
     /// <summary>
-    /// 高亮区域缩放的动画时间
-    /// </summary>
-    private float _shrinkTime = 0.2f;
-
-    /// <summary>
     /// 收缩速度
     /// </summary>
     private float _shrinkVelocity = 0f;
-
-    /// <summary>
-    /// 世界坐标向画布坐标转换
-    /// </summary>
-    /// <param name="canvas">画布</param>
-    /// <param name="world">世界坐标</param>
-    /// <returns>返回画布上的二维坐标</returns>
-    Vector2 WorldToCanvasPos(Canvas canvas, Vector3 world)
-    {
-        Vector2 position;
-
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(canvas.transform as RectTransform, world, null, out position);
-
-        return position;
-    }
-
-    void Awake()
-    {
-        curIdx = 0;
-
-        _material = GetComponent<Image>().material;
-    }
 
     void Update()
     {
@@ -81,20 +27,11 @@ public class CircleMaskControl : MonoBehaviour, ICanvasRaycastFilter
         if (!Mathf.Approximately(value, _currentRadius))
         {
             _currentRadius = value;
-
             _material.SetFloat("_Slider", _currentRadius);
         }
     }
 
-    public bool IsRaycastLocationValid(Vector2 sp, Camera eventCamera)
-    {
-        if (Target == null) return true;
-
-        //在目标范围内做事件渗透
-        return !RectTransformUtility.RectangleContainsScreenPoint(Target, sp, eventCamera);
-    }
-
-    public void SetCurTarget()
+    public override void SetCurTarget()
     {
         if (Target != null) return;
 
@@ -105,8 +42,8 @@ public class CircleMaskControl : MonoBehaviour, ICanvasRaycastFilter
         Target.GetWorldCorners(_corners);
 
         GetComponent<Image>().enabled = true;
-        //计算最终高亮显示区域的半径
-        _radius = Vector2.Distance(WorldToCanvasPos(Canvas, _corners[0]), WorldToCanvasPos(Canvas, _corners[1])) / 2f + 30f;
+        //计算最终高亮显示区域的半径 设置系数比根号2 = 1.414 稍微大点
+        _radius = 1.45f * Vector2.Distance(WorldToCanvasPos(Canvas, _corners[0]), WorldToCanvasPos(Canvas, _corners[1])) / 2f;
 
         //计算高亮显示区域的圆心
         float x = _corners[0].x + ((_corners[3].x - _corners[0].x) / 2f);
@@ -136,16 +73,9 @@ public class CircleMaskControl : MonoBehaviour, ICanvasRaycastFilter
         }
 
         _material.SetFloat("_Slider", _currentRadius);
-
- 
     }
 
-    public void CurTargetDone()
-    {
-        //GetComponent<Image>().enabled = false;
-        Target = null;
-    }
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
         _material.SetFloat("_Slider", 0);
     }

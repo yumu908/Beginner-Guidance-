@@ -1,34 +1,8 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 
-public class RectMaskControl : MonoBehaviour, ICanvasRaycastFilter
+public class RectMaskControl : MaskControl
 {
-    public Canvas Canvas;
-    /// <summary>
-    /// 所有目标
-    /// </summary>
-    public RectTransform[] targets;
-
-    /// <summary>
-    /// 
-    /// </summary>
-    private int curIdx;
-
-    /// <summary>
-    /// 要高亮显示的目标
-    /// </summary>
-    public RectTransform Target { get;private set; }
-
-    /// <summary>
-	/// 区域范围缓存
-	/// </summary>
-	private Vector3[] _corners = new Vector3[4];
-
-    /// <summary>
-    /// 镂空区域中心
-    /// </summary>
-    private Vector4 _center;
-
     /// <summary>
     /// 最终的偏移值X
     /// </summary>
@@ -38,11 +12,6 @@ public class RectMaskControl : MonoBehaviour, ICanvasRaycastFilter
     /// 最终的偏移值Y
     /// </summary>
     private float _targetOffsetY = 0f;
-
-    /// <summary>
-    /// 遮罩材质
-    /// </summary>
-    private Material _material;
 
     /// <summary>
     /// 当前的偏移值X
@@ -55,37 +24,10 @@ public class RectMaskControl : MonoBehaviour, ICanvasRaycastFilter
     private float _currentOffsetY = 0f;
 
     /// <summary>
-    /// 动画收缩时间
-    /// </summary>
-    private float _shrinkTime = 0.2f;
-
-    /// <summary>
     /// 收缩速度
     /// </summary>
     private float _shrinkVelocityX = 0f;
     private float _shrinkVelocityY = 0f;
-
-    /// <summary>
-    /// 世界坐标向画布坐标转换
-    /// </summary>
-    /// <param name="canvas">画布</param>
-    /// <param name="world">世界坐标</param>
-    /// <returns>返回画布上的二维坐标</returns>
-    Vector2 WorldToCanvasPos(Canvas canvas, Vector3 world)
-    {
-        Vector2 position;
-
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(canvas.transform as RectTransform, world, null, out position);
-
-        return position;
-    }
-
-    void Awake()
-    {
-        curIdx = 0;
-
-        _material = GetComponent<Image>().material;
-    }
 
     void Update()
     {
@@ -107,15 +49,7 @@ public class RectMaskControl : MonoBehaviour, ICanvasRaycastFilter
         }
     }
 
-    public bool IsRaycastLocationValid(Vector2 sp, Camera eventCamera)
-    {
-        if (Target == null) return true;
-
-        //在目标范围内做事件渗透
-        return !RectTransformUtility.RectangleContainsScreenPoint(Target, sp, eventCamera);
-    }
-
-    public void SetCurTarget()
+    public override void SetCurTarget()
     {
         if (Target != null) return ;
 
@@ -135,7 +69,6 @@ public class RectMaskControl : MonoBehaviour, ICanvasRaycastFilter
         Vector2 center = WorldToCanvasPos(Canvas, centerWorld);
         //设置遮罩材料中中心变量
         Vector4 centerMat = new Vector4(center.x, center.y, 0, 0);
-        _material = GetComponent<Image>().material;
         _material.SetVector("_Center", centerMat);
         //计算当前偏移的初始值
         RectTransform canvasRectTransform = (Canvas.transform as RectTransform);
@@ -157,13 +90,8 @@ public class RectMaskControl : MonoBehaviour, ICanvasRaycastFilter
         _material.SetFloat("_SliderY", _currentOffsetY);
         Canvas.sortingOrder = 5;
     }
-
-    public void CurTargetDone()
-    {
-        //GetComponent<Image>().enabled = false;
-        Target = null;
-    }
-    private void OnDestroy()
+   
+    protected override void OnDestroy()
     {
         _material.SetFloat("_SliderX", 0);
         _material.SetFloat("_SliderY", 0);

@@ -1,6 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
@@ -16,29 +16,44 @@ namespace MaskTest
         {
             get { return _rectMaskControl.Target; }
         }
-        CircleMaskControl _circleMaskControl;
+        MaskControl _circleMaskControl;
         RectMaskControl _rectMaskControl;
+        private MaskControl _MaskControl;
         Transform[] _targets;
-        private void Awake()
+
+        private void Switch()
         {
-            Instance = this;
+            if (_MaskControl == _rectMaskControl)
+            {
+                _rectMaskControl.gameObject.SetActive(false);
+                _MaskControl = _circleMaskControl;
+            }
+            else
+            {
+                _circleMaskControl.gameObject.SetActive(false);
+                _MaskControl = _rectMaskControl;
+            }
+
+            _MaskControl.gameObject.SetActive(true);
+            _MaskControl.SetCurTarget();
+            _targets = _MaskControl.targets;
         }
+
+
         private void Start()
         {
             _circleMaskControl = transform.Find("CircleMask").GetComponent<CircleMaskControl>();
             _rectMaskControl = transform.Find("RectMask").GetComponent<RectMaskControl>();
-            //指向指定目标
-            //_circleMaskControl.SetCurTarget();
-            //此处采用矩形区域遮罩，圆形遮罩同理
-            _rectMaskControl.SetCurTarget();
-            _targets = _rectMaskControl.targets;
+            Instance = this;
+            Switch();
+
             for (int i = 0; i < _targets.Length; i++)
             {
                 if (i != _targets.Length - 1)
                     _targets[i].GetComponent<Button>().onClick.AddListener(() =>
                     {
-                        _rectMaskControl.CurTargetDone();
-                        _rectMaskControl.SetCurTarget();
+                        _MaskControl.CurTargetDone();
+                        _MaskControl.SetCurTarget();
                     });
                 else
                 {
@@ -54,6 +69,15 @@ namespace MaskTest
                 }
             }
         }
+
+        void Update()
+        {
+            if(Input.GetKeyUp(KeyCode.A))
+            {
+                Switch();
+            }
+        }
+
         public void OnPointerClick(PointerEventData eventData)
         {
             PassEvent(eventData, ExecuteEvents.pointerClickHandler);
